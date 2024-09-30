@@ -9,6 +9,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/danielgtaylor/huma/v2/humacli"
 	"github.com/go-chi/chi/v5"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -178,9 +179,63 @@ func Tutorial4() {
 	cli.Run()
 }
 
+// https://huma.rocks/tutorial/client-sdks/
+func Tutorial6() {
+	var api huma.API
+
+	cli := humacli.New(func(hooks humacli.Hooks, options *Options) {
+		router := chi.NewMux()
+		api = humachi.New(router, huma.DefaultConfig("My API", "1.0.0"))
+
+		huma.Register(api, huma.Operation{
+			OperationID: "get_greeting",
+			Method:      http.MethodGet,
+			Path:        "/greeting/{name}",
+			Summary:     "Get a greeting",
+			Description: "Get a greeting for a person by name",
+			Tags:        []string{"Greetings"},
+		}, func(ctx context.Context, input *struct {
+			Name string `path:"name" maxLength:"30" minLength:"3" example:"world" doc:"Name to greet"`
+		}) (*GreetingOutPut, error) {
+			resp := &GreetingOutPut{}
+			resp.Body.Message = fmt.Sprintf("Hello, %s!", input.Name)
+			return resp, nil
+		})
+
+		huma.Register(api, huma.Operation{
+			OperationID:   "post-review",
+			Method:        http.MethodPost,
+			Path:          "/reviews",
+			Summary:       "Post a review",
+			Tags:          []string{"Reviews"},
+			DefaultStatus: http.StatusCreated,
+		}, func(ctx context.Context, input *ReviewInput) (*struct{}, error) {
+			fmt.Println(input)
+			return nil, nil
+		})
+
+		hooks.OnStart(func() {
+			fmt.Printf("Starting server on Port %d...\n", options.Port)
+			http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
+		})
+	})
+
+	cli.Root().AddCommand(&cobra.Command{
+		Use:   "openapi",
+		Short: "Print the OpenAPI spec",
+		Run: func(cmd *cobra.Command, args []string) {
+			b, _ := api.OpenAPI().DowngradeYAML()
+			fmt.Println(string(b))
+		},
+	})
+
+	cli.Run()
+}
+
 func main() {
 	// Tutorial1()
 	// Tutorial2()
 	// Tutorial3()
-	Tutorial4()
+	// Tutorial4()
+	Tutorial6()
 }

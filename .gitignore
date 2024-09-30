@@ -5,4 +5,10 @@
 .idea/
 .vscode/
 
-tmp/*
+# goExample练习
+tmp/
+99.tmp/
+
+# huma练习
+openapi.yaml
+sdk/
