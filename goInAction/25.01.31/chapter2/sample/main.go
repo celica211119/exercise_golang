@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+
+	_ "sample/matchers"
 )
 
 func init() {
